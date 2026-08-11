@@ -20,8 +20,10 @@ uploads those pieces as Release assets. GitHub records a SHA-256 digest for each
 asset. Non-weight files, the upstream license, tokenizer, configuration, model
 card, and the pinned manifest are packaged separately.
 
-Each job handles only one original shard and is safe to rerun. A failed job can
-be rerun without restarting successful shards.
+Each workflow range is divided into 12 small, resumable lanes. A lane checks
+the Release before doing work and skips every shard whose expected parts are
+already present with the correct sizes and GitHub digests. Failed lanes can be
+rerun without restarting successful shards.
 
 ## Restore
 

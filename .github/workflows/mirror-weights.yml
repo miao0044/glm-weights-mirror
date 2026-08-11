@@ -36,7 +36,7 @@ jobs:
           START: ${{ inputs.start }}
           END: ${{ inputs.end }}
         run: |
-          matrix=$(python3 scripts/make_matrix.py --model "$MODEL" --start "$START" --end "$END")
+          matrix=$(python3 scripts/make_lane_matrix.py --model "$MODEL" --start "$START" --end "$END" --lanes 12)
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
   mirror:
@@ -49,16 +49,19 @@ jobs:
       matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
     env:
       GH_TOKEN: ${{ github.token }}
-      MODEL: ${{ matrix.model }}
-      HF_REPO: ${{ matrix.hf_repo }}
-      REVISION: ${{ matrix.revision }}
-      FILE_PATH: ${{ matrix.path }}
-      EXPECTED_SIZE: ${{ matrix.size }}
-      EXPECTED_SHA256: ${{ matrix.sha256 }}
-      EXPECTED_PART_COUNT: ${{ matrix.part_count }}
-      CHUNK_BYTES: ${{ matrix.chunk_bytes }}
-      RELEASE_TAG: ${{ matrix.release_tag }}
     steps:
       - uses: actions/checkout@v4
-      - name: Stream, verify, split, and upload
-        run: bash scripts/mirror_shard.sh
+      - name: Mirror resumable shard lane
+        env:
+          MODEL: ${{ matrix.model }}
+          START: ${{ matrix.start }}
+          END: ${{ matrix.end }}
+          LANE: ${{ matrix.lane }}
+          LANE_COUNT: ${{ matrix.lane_count }}
+        run: |
+          python3 scripts/mirror_lane.py \
+            --model "$MODEL" \
+            --start "$START" \
+            --end "$END" \
+            --lane "$LANE" \
+            --lane-count "$LANE_COUNT"
