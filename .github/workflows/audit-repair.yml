@@ -2,6 +2,11 @@ name: Audit and repair mirror
 
 on:
   workflow_dispatch:
+  workflow_run:
+    workflows:
+      - Mirror weight shards
+    types:
+      - completed
   schedule:
     - cron: "17 08 * * *"
 
@@ -11,6 +16,11 @@ permissions:
 
 jobs:
   audit:
+    if: >-
+      ${{
+        github.event_name != 'workflow_run' ||
+        github.event.workflow_run.conclusion == 'success'
+      }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
