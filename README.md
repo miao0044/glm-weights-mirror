@@ -23,7 +23,9 @@ card, and the pinned manifest are packaged separately.
 Each workflow range is divided into 12 small, resumable lanes. A lane checks
 the Release before doing work and skips every shard whose expected parts are
 already present with the correct sizes and GitHub digests. Failed lanes can be
-rerun without restarting successful shards.
+rerun without restarting successful shards. A companion `workflow_run`
+automation retries failed or timed-out lanes up to three times after a short
+cooldown.
 
 ## Restore
 
