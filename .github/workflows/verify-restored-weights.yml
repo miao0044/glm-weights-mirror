@@ -1,10 +1,10 @@
-name: Mirror weight shards
+name: Verify restored weights
 
 on:
   workflow_dispatch:
     inputs:
       model:
-        description: Model to mirror
+        description: Model to restore-verify
         required: true
         type: choice
         options:
@@ -40,7 +40,7 @@ jobs:
           matrix=$(python3 scripts/make_lane_matrix.py --model "$MODEL" --start "$START" --end "$END" --lanes 12)
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
-  mirror:
+  verify:
     needs: prepare
     runs-on: ubuntu-latest
     timeout-minutes: 300
@@ -52,7 +52,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
-      - name: Mirror resumable shard lane
+      - name: Stream all parts and verify reconstructed file hashes
         env:
           MODEL: ${{ matrix.model }}
           START: ${{ matrix.start }}
@@ -60,7 +60,7 @@ jobs:
           LANE: ${{ matrix.lane }}
           LANE_COUNT: ${{ matrix.lane_count }}
         run: |
-          python3 scripts/mirror_lane.py \
+          python3 scripts/verify_restore_lane.py \
             --model "$MODEL" \
             --start "$START" \
             --end "$END" \

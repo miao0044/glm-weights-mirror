@@ -17,12 +17,15 @@ jobs:
         model:
           - GLM-5.1
           - GLM-5.1-FP8
+          - GLM-5.2
           - GLM-5.2-FP8
         include:
           - model: GLM-5.1
             release_tag: glm-5.1-26e1bd6
           - model: GLM-5.1-FP8
             release_tag: glm-5.1-fp8-f396cf8
+          - model: GLM-5.2
+            release_tag: glm-5.2-b4734de
           - model: GLM-5.2-FP8
             release_tag: glm-5.2-fp8-ba978f7
     env:

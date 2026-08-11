@@ -16,6 +16,13 @@
       "manifest": "manifests/GLM-5.1-FP8.json",
       "expected_weight_files": 142
     },
+    "GLM-5.2": {
+      "hf_repo": "zai-org/GLM-5.2",
+      "revision": "b4734de4facf877f85769a911abafc5283eab3d9",
+      "release_tag": "glm-5.2-b4734de",
+      "manifest": "manifests/GLM-5.2.json",
+      "expected_weight_files": 282
+    },
     "GLM-5.2-FP8": {
       "hf_repo": "zai-org/GLM-5.2-FP8",
       "revision": "ba978f7d347eaf65d22f1a86833408afdb953541",

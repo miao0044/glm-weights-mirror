@@ -40,9 +40,47 @@ jobs:
             "$RUNNER_TEMP/progress.json" >> "$GITHUB_STEP_SUMMARY"
 
           if jq -e 'all(.[]; .complete == true)' "$RUNNER_TEMP/progress.json" >/dev/null; then
-            echo "All three model releases are complete and verified." \
+            echo "All four model releases are complete; checking restore verification." \
               >> "$GITHUB_STEP_SUMMARY"
-            gh workflow disable audit-repair.yml --repo "$GITHUB_REPOSITORY"
+
+            final_proof=$(gh release view restore-verification-v1 \
+              --repo "$GITHUB_REPOSITORY" \
+              --json assets \
+              --jq '[.assets[] | select(.name == "ALL_MODELS_RESTORE_VERIFIED.json" and .state == "uploaded")] | length' \
+              2>/dev/null || echo 0)
+            if [[ "$final_proof" -gt 0 ]]; then
+              echo "Final all-model restore proof is present; audit is complete." \
+                >> "$GITHUB_STEP_SUMMARY"
+              gh workflow disable audit-repair.yml --repo "$GITHUB_REPOSITORY"
+              exit 0
+            fi
+
+            active_restore=$(gh run list \
+              --repo "$GITHUB_REPOSITORY" \
+              --workflow verify-restored-weights.yml \
+              --limit 100 \
+              --json status \
+              --jq '[.[] | select(.status != "completed")] | length')
+            if [[ "$active_restore" -gt 0 ]]; then
+              echo "${active_restore} restore-verification run(s) are active; audit deferred." \
+                >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+
+            echo "Dispatching resumable, full restore-verification lanes." \
+              >> "$GITHUB_STEP_SUMMARY"
+            gh workflow run verify-restored-weights.yml --repo "$GITHUB_REPOSITORY" \
+              --ref main -f model=GLM-5.1 -f start=1 -f end=141
+            gh workflow run verify-restored-weights.yml --repo "$GITHUB_REPOSITORY" \
+              --ref main -f model=GLM-5.1 -f start=142 -f end=282
+            gh workflow run verify-restored-weights.yml --repo "$GITHUB_REPOSITORY" \
+              --ref main -f model=GLM-5.1-FP8 -f start=1 -f end=142
+            gh workflow run verify-restored-weights.yml --repo "$GITHUB_REPOSITORY" \
+              --ref main -f model=GLM-5.2 -f start=1 -f end=141
+            gh workflow run verify-restored-weights.yml --repo "$GITHUB_REPOSITORY" \
+              --ref main -f model=GLM-5.2 -f start=142 -f end=282
+            gh workflow run verify-restored-weights.yml --repo "$GITHUB_REPOSITORY" \
+              --ref main -f model=GLM-5.2-FP8 -f start=1 -f end=141
             exit 0
           fi
 
@@ -54,5 +92,9 @@ jobs:
             --ref main -f model=GLM-5.1 -f start=142 -f end=282
           gh workflow run mirror-weights.yml --repo "$GITHUB_REPOSITORY" \
             --ref main -f model=GLM-5.1-FP8 -f start=1 -f end=142
+          gh workflow run mirror-weights.yml --repo "$GITHUB_REPOSITORY" \
+            --ref main -f model=GLM-5.2 -f start=1 -f end=141
+          gh workflow run mirror-weights.yml --repo "$GITHUB_REPOSITORY" \
+            --ref main -f model=GLM-5.2 -f start=142 -f end=282
           gh workflow run mirror-weights.yml --repo "$GITHUB_REPOSITORY" \
             --ref main -f model=GLM-5.2-FP8 -f start=1 -f end=141

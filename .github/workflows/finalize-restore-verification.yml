@@ -1,0 +1,23 @@
+name: Finalize restore verification
+
+on:
+  workflow_run:
+    workflows:
+      - Verify restored weights
+    types:
+      - completed
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create final proof only when every reconstructed shard passes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 scripts/finalize_restore_verification.py \
+            --repo "$GITHUB_REPOSITORY"
