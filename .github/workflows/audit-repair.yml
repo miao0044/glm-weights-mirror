@@ -1,0 +1,58 @@
+name: Audit and repair mirror
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 08 * * *"
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check progress and repair incomplete releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          active=$(gh run list \
+            --repo "$GITHUB_REPOSITORY" \
+            --workflow mirror-weights.yml \
+            --limit 100 \
+            --json status \
+            --jq '[.[] | select(.status != "completed")] | length')
+
+          if [[ "$active" -gt 0 ]]; then
+            echo "${active} mirror workflow run(s) are still active; audit deferred." \
+              >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          python3 scripts/verify_release.py \
+            --repo "$GITHUB_REPOSITORY" \
+            --allow-incomplete \
+            > "$RUNNER_TEMP/progress.json"
+          cat "$RUNNER_TEMP/progress.json"
+          jq -r '.[] | "- \(.model): \(.percent_by_bytes)% (\(.present_valid_weight_assets)/\(.expected_weight_assets) assets)"' \
+            "$RUNNER_TEMP/progress.json" >> "$GITHUB_STEP_SUMMARY"
+
+          if jq -e 'all(.[]; .complete == true)' "$RUNNER_TEMP/progress.json" >/dev/null; then
+            echo "All three model releases are complete and verified." \
+              >> "$GITHUB_STEP_SUMMARY"
+            gh workflow disable audit-repair.yml --repo "$GITHUB_REPOSITORY"
+            exit 0
+          fi
+
+          echo "Incomplete assets detected; dispatching resumable repair lanes." \
+            >> "$GITHUB_STEP_SUMMARY"
+          gh workflow run mirror-weights.yml --repo "$GITHUB_REPOSITORY" \
+            --ref main -f model=GLM-5.1 -f start=1 -f end=141
+          gh workflow run mirror-weights.yml --repo "$GITHUB_REPOSITORY" \
+            --ref main -f model=GLM-5.1 -f start=142 -f end=282
+          gh workflow run mirror-weights.yml --repo "$GITHUB_REPOSITORY" \
+            --ref main -f model=GLM-5.1-FP8 -f start=1 -f end=142
+          gh workflow run mirror-weights.yml --repo "$GITHUB_REPOSITORY" \
+            --ref main -f model=GLM-5.2-FP8 -f start=1 -f end=141

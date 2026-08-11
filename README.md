@@ -25,7 +25,9 @@ the Release before doing work and skips every shard whose expected parts are
 already present with the correct sizes and GitHub digests. Failed lanes can be
 rerun without restarting successful shards. A companion `workflow_run`
 automation retries failed or timed-out lanes up to three times after a short
-cooldown.
+cooldown. A daily audit waits until no mirror run is active, verifies all
+expected assets, dispatches resumable repair lanes if needed, and disables
+itself after all three releases are complete.
 
 ## Restore
 
