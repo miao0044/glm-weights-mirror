@@ -1,0 +1,64 @@
+name: Mirror weight shards
+
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: Model to mirror
+        required: true
+        type: choice
+        options:
+          - GLM-5.1
+          - GLM-5.1-FP8
+          - GLM-5.2-FP8
+      start:
+        description: First shard number (1-based, inclusive)
+        required: true
+        type: string
+      end:
+        description: Last shard number (1-based, inclusive)
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: matrix
+        env:
+          MODEL: ${{ inputs.model }}
+          START: ${{ inputs.start }}
+          END: ${{ inputs.end }}
+        run: |
+          matrix=$(python3 scripts/make_matrix.py --model "$MODEL" --start "$START" --end "$END")
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+
+  mirror:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      MODEL: ${{ matrix.model }}
+      HF_REPO: ${{ matrix.hf_repo }}
+      REVISION: ${{ matrix.revision }}
+      FILE_PATH: ${{ matrix.path }}
+      EXPECTED_SIZE: ${{ matrix.size }}
+      EXPECTED_SHA256: ${{ matrix.sha256 }}
+      EXPECTED_PART_COUNT: ${{ matrix.part_count }}
+      CHUNK_BYTES: ${{ matrix.chunk_bytes }}
+      RELEASE_TAG: ${{ matrix.release_tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Stream, verify, split, and upload
+        run: bash scripts/mirror_shard.sh

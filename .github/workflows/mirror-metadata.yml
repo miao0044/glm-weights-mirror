@@ -1,0 +1,41 @@
+name: Mirror model metadata
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  metadata:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        model:
+          - GLM-5.1
+          - GLM-5.1-FP8
+          - GLM-5.2-FP8
+        include:
+          - model: GLM-5.1
+            release_tag: glm-5.1-26e1bd6
+          - model: GLM-5.1-FP8
+            release_tag: glm-5.1-fp8-f396cf8
+          - model: GLM-5.2-FP8
+            release_tag: glm-5.2-fp8-ba978f7
+    env:
+      GH_TOKEN: ${{ github.token }}
+      MODEL: ${{ matrix.model }}
+      RELEASE_TAG: ${{ matrix.release_tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download and package pinned metadata
+        run: python3 scripts/mirror_metadata.py --model "$MODEL" --output-dir "$RUNNER_TEMP"
+      - name: Upload metadata and manifest
+        run: |
+          gh release upload "$RELEASE_TAG" \
+            "$RUNNER_TEMP/${MODEL}-metadata.tar.gz" \
+            "$RUNNER_TEMP/${MODEL}.manifest.json" \
+            --repo "$GITHUB_REPOSITORY" --clobber

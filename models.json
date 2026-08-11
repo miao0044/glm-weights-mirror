@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "chunk_bytes": 1900000000,
+  "models": {
+    "GLM-5.1": {
+      "hf_repo": "zai-org/GLM-5.1",
+      "revision": "26e1bd6e011feb778d25ae34b09b07074139d92d",
+      "release_tag": "glm-5.1-26e1bd6",
+      "manifest": "manifests/GLM-5.1.json",
+      "expected_weight_files": 282
+    },
+    "GLM-5.1-FP8": {
+      "hf_repo": "zai-org/GLM-5.1-FP8",
+      "revision": "f396cf805182f4ca10fa675e1a99815b3ca384db",
+      "release_tag": "glm-5.1-fp8-f396cf8",
+      "manifest": "manifests/GLM-5.1-FP8.json",
+      "expected_weight_files": 142
+    },
+    "GLM-5.2-FP8": {
+      "hf_repo": "zai-org/GLM-5.2-FP8",
+      "revision": "ba978f7d347eaf65d22f1a86833408afdb953541",
+      "release_tag": "glm-5.2-fp8-ba978f7",
+      "manifest": "manifests/GLM-5.2-FP8.json",
+      "expected_weight_files": 141
+    }
+  }
+}
