@@ -20,6 +20,7 @@ def verify(repo: str, name: str, config: dict) -> dict:
     bad = []
     expected_bytes = 0
     expected_count = 0
+    present_valid_bytes = 0
 
     for item in manifest["files"]:
         if item["kind"] != "weight":
@@ -46,6 +47,8 @@ def verify(repo: str, name: str, config: dict) -> dict:
                         "digest": digest,
                     }
                 )
+            else:
+                present_valid_bytes += part["size"]
 
     metadata_names = {
         f"{name}-metadata.tar.gz",
@@ -60,6 +63,8 @@ def verify(repo: str, name: str, config: dict) -> dict:
         "expected_weight_assets": expected_count,
         "present_valid_weight_assets": expected_count - len(missing) - len(bad),
         "expected_weight_bytes": expected_bytes,
+        "present_valid_weight_bytes": present_valid_bytes,
+        "percent_by_bytes": round(100 * present_valid_bytes / expected_bytes, 3),
         "missing_count": len(missing),
         "bad_count": len(bad),
         "missing_metadata": missing_metadata,
@@ -72,12 +77,17 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--repo", required=True)
     parser.add_argument("--model", action="append", help="Defaults to all models")
+    parser.add_argument(
+        "--allow-incomplete",
+        action="store_true",
+        help="Report progress without a nonzero exit status",
+    )
     args = parser.parse_args()
     settings = json.loads((ROOT / "models.json").read_text(encoding="utf-8"))
     selected = args.model or list(settings["models"])
     results = [verify(args.repo, name, settings["models"][name]) for name in selected]
     print(json.dumps(results, indent=2))
-    return 0 if all(result["complete"] for result in results) else 1
+    return 0 if args.allow_incomplete or all(result["complete"] for result in results) else 1
 
 
 if __name__ == "__main__":

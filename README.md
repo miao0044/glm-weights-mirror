@@ -45,6 +45,15 @@ SHA-256. It does not need a second full-model-sized temporary directory.
 Do not delete another known-good copy until `verify_release.py` reports the
 release complete and a restore test has succeeded.
 
+To check current cloud-copy progress without treating incomplete releases as an
+error:
+
+```bash
+python scripts/verify_release.py \
+  --repo miao0044/glm-weights-mirror \
+  --allow-incomplete
+```
+
 ## Attribution and license
 
 The mirrored models are from the public `zai-org` Hugging Face repositories and
