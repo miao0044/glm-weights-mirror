@@ -402,8 +402,12 @@ if (-not $createdNew) {
 try {
     Set-Content -LiteralPath $pidPath -Value $PID -Encoding ascii
     Write-MonitorLog "Monitor started (PID $PID, poll interval $PollSeconds seconds, NoDelete=$NoDelete)."
+    $startupState = Read-State
     $preflight = @()
     foreach ($target in $config.targets) {
+        if ($startupState.deleted.ContainsKey([string]$target.model)) {
+            continue
+        }
         $preflight += Test-LocalTarget -Target $target -Expected $expectedModels[[string]$target.model]
     }
     $preflightBytes = [long](($preflight | Measure-Object DirectoryBytes -Sum).Sum)
