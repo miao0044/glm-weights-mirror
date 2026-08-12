@@ -1,6 +1,7 @@
 name: Finalize restore verification
 
 on:
+  workflow_dispatch:
   workflow_run:
     workflows:
       - Verify restored weights
